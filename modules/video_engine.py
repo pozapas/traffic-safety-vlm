@@ -45,6 +45,19 @@ _FORMAT_FALLBACKS = [
     "best",
 ]
 
+_YTDLP_BASE_FLAGS = [
+    "--no-warnings", "--quiet", "--no-playlist",
+    "--geo-bypass",
+    "--user-agent", _YTDLP_USER_AGENT,
+    "--add-header", "Accept-Language:en-US,en;q=0.9",
+    "--extractor-retries", "3",
+    "--socket-timeout", "15",
+]
+
+_YTDLP_COOKIE_FLAGS = ["--cookies-from-browser", "chrome"]
+
+_VIDEO_FILE_EXTS = {".mp4", ".mkv", ".webm", ".mov", ".avi", ".ts", ".m4v"}
+
 
 def get_stream_url(
     yt_url: str,
@@ -58,21 +71,9 @@ def get_stream_url(
     """
     selectors = [format_selector] if format_selector else _FORMAT_FALLBACKS
 
-    base_flags = [
-        "--no-warnings", "--quiet", "-g", "--no-playlist",
-        "--geo-bypass",
-        "--user-agent", _YTDLP_USER_AGENT,
-        "--add-header", "Accept-Language:en-US,en;q=0.9",
-        "--extractor-retries", "3",
-        "--socket-timeout", "15",
-    ]
-
-    # Pick first available browser for cookie extraction
-    cookie_flags: list[str] = ["--cookies-from-browser", "chrome"]
-
     last_err = "Unknown error"
     for fmt in selectors:
-        cmd = ["yt-dlp"] + base_flags + cookie_flags + ["-f", fmt, yt_url]
+        cmd = ["yt-dlp"] + _YTDLP_BASE_FLAGS + _YTDLP_COOKIE_FLAGS + ["-g", "-f", fmt, yt_url]
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
             if result.returncode == 0:
@@ -83,7 +84,7 @@ def get_stream_url(
             else:
                 last_err = result.stderr.strip() or "yt-dlp non-zero exit"
                 # Retry without cookies — some videos reject cookie-auth
-                cmd2 = ["yt-dlp"] + base_flags + ["-f", fmt, yt_url]
+                cmd2 = ["yt-dlp"] + _YTDLP_BASE_FLAGS + ["-g", "-f", fmt, yt_url]
                 r2 = subprocess.run(cmd2, capture_output=True, text=True, timeout=timeout)
                 if r2.returncode == 0:
                     url = r2.stdout.strip().split("\n")[0].strip()
@@ -124,6 +125,114 @@ def get_video_metadata(yt_url: str) -> dict:
     except Exception:
         pass
     return {"title": yt_url, "duration": "unknown", "views": "N/A", "is_live": False}
+
+
+def _pick_downloaded_video(tmp_dir: str) -> Optional[Path]:
+    candidates = []
+    for path in Path(tmp_dir).iterdir():
+        if not path.is_file():
+            continue
+        if path.suffix.lower() not in _VIDEO_FILE_EXTS:
+            continue
+        try:
+            size = path.stat().st_size
+            mtime = path.stat().st_mtime
+        except OSError:
+            continue
+        if size <= 0:
+            continue
+        candidates.append((size, mtime, path))
+
+    if not candidates:
+        return None
+
+    candidates.sort(reverse=True)
+    return candidates[0][2]
+
+
+def _sample_frames_with_ytdlp_download(
+    yt_url: str,
+    interval_s: int,
+    max_frames: int,
+    progress_callback=None,
+    timeout: int = 180,
+) -> tuple[list["FrameSample"], Optional[str]]:
+    """
+    Hosted-environment fallback:
+    use yt-dlp to write a short local clip from the original YouTube URL,
+    then sample frames from that local file.
+    """
+    metadata = get_video_metadata(yt_url)
+    is_live = bool(metadata.get("is_live"))
+    clip_duration_s = max(interval_s * max_frames + interval_s, 12)
+    download_timeout = max(timeout, clip_duration_s + 30) if is_live else timeout
+
+    download_args = [
+        "--force-overwrites",
+        "--no-part",
+        "--downloader", "dash,m3u8:native",
+        "--hls-use-mpegts",
+        "-f", "bestvideo[height<=720]/best[height<=720]/best",
+    ]
+    if not is_live:
+        download_args.extend([
+            "--download-sections", f"*0-{clip_duration_s}",
+            "--force-keyframes-at-cuts",
+        ])
+
+    last_err = "yt-dlp local clip fallback failed."
+
+    for cookie_flags in (_YTDLP_COOKIE_FLAGS, []):
+        try:
+            with tempfile.TemporaryDirectory(prefix="vlm_ytdlp_") as tmp_dir:
+                output_template = str(Path(tmp_dir) / "snippet.%(ext)s")
+                cmd = (
+                    ["yt-dlp"]
+                    + _YTDLP_BASE_FLAGS
+                    + cookie_flags
+                    + download_args
+                    + ["-o", output_template, yt_url]
+                )
+
+                timed_out = False
+                try:
+                    result = subprocess.run(
+                        cmd,
+                        capture_output=True,
+                        text=True,
+                        timeout=download_timeout,
+                    )
+                    if result.returncode != 0:
+                        last_err = result.stderr.strip() or "yt-dlp could not download a playable clip."
+                except subprocess.TimeoutExpired:
+                    timed_out = True
+                    last_err = f"yt-dlp download timed out after {download_timeout}s"
+
+                local_video = _pick_downloaded_video(tmp_dir)
+                if local_video is None:
+                    if timed_out and is_live:
+                        last_err = f"{last_err}; no partial local clip was written"
+                    continue
+
+                try:
+                    sampler = FrameSampler(
+                        stream_url=str(local_video),
+                        interval_s=interval_s,
+                        max_frames=max_frames,
+                    )
+                    frames = sampler.sample(progress_callback=progress_callback)
+                    if frames:
+                        logger.info("Recovered frames using yt-dlp local clip fallback.")
+                        return frames, None
+                    last_err = "yt-dlp downloaded a local clip, but no frames could be extracted."
+                except Exception as sample_err:
+                    last_err = f"yt-dlp local clip was not readable by OpenCV: {sample_err}"
+        except FileNotFoundError:
+            return [], "yt-dlp not found â€” run: pip install yt-dlp"
+        except Exception as e:
+            last_err = str(e)
+
+    return [], last_err
 
 
 # ──────────────────────────────────────────────
@@ -357,6 +466,16 @@ def sample_frames_from_url(
         )
         frames = sampler.sample(progress_callback=progress_callback)
         if not frames:
+            ytdlp_frames, ytdlp_err = _sample_frames_with_ytdlp_download(
+                yt_url=yt_url,
+                interval_s=interval_s,
+                max_frames=max_frames,
+                progress_callback=progress_callback,
+            )
+            if ytdlp_frames:
+                logger.info("OpenCV returned no frames; recovered with yt-dlp local clip fallback.")
+                return ytdlp_frames, None
+
             ffmpeg_frames, ffmpeg_err = _sample_frames_with_ffmpeg(
                 stream_url=stream_url,
                 interval_s=interval_s,
@@ -365,10 +484,21 @@ def sample_frames_from_url(
             if ffmpeg_frames:
                 logger.info("OpenCV returned no frames; recovered with ffmpeg fallback.")
                 return ffmpeg_frames, None
-            return [], ffmpeg_err or "No frames could be extracted from the stream."
+            if ytdlp_err and ffmpeg_err:
+                return [], f"Direct stream sampling failed. yt-dlp local clip fallback: {ytdlp_err}. ffmpeg manifest fallback: {ffmpeg_err}"
+            return [], ytdlp_err or ffmpeg_err or "No frames could be extracted from the stream."
         return frames, None
     except Exception as e:
-        logger.warning("OpenCV stream sampling failed, trying ffmpeg fallback: %s", e)
+        logger.warning("OpenCV stream sampling failed, trying fallback chain: %s", e)
+        ytdlp_frames, ytdlp_err = _sample_frames_with_ytdlp_download(
+            yt_url=yt_url,
+            interval_s=interval_s,
+            max_frames=max_frames,
+            progress_callback=progress_callback,
+        )
+        if ytdlp_frames:
+            return ytdlp_frames, None
+
         ffmpeg_frames, ffmpeg_err = _sample_frames_with_ffmpeg(
             stream_url=stream_url,
             interval_s=interval_s,
@@ -377,6 +507,10 @@ def sample_frames_from_url(
         if ffmpeg_frames:
             return ffmpeg_frames, None
 
+        if ytdlp_err and ffmpeg_err:
+            return [], f"{e} | yt-dlp local clip fallback failed: {ytdlp_err} | ffmpeg manifest fallback failed: {ffmpeg_err}"
+        if ytdlp_err:
+            return [], f"{e} | yt-dlp local clip fallback failed: {ytdlp_err}"
         if ffmpeg_err:
-            return [], f"{e} | ffmpeg fallback failed: {ffmpeg_err}"
+            return [], f"{e} | ffmpeg manifest fallback failed: {ffmpeg_err}"
         return [], str(e)
