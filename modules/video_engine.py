@@ -14,9 +14,12 @@ from __future__ import annotations
 
 import base64
 import io
-import subprocess
-import time
 import logging
+from pathlib import Path
+import shutil
+import subprocess
+import tempfile
+import time
 from typing import Generator, Optional
 
 import cv2
@@ -263,6 +266,73 @@ class FrameSampler:
         return frames
 
 
+def _sample_frames_with_ffmpeg(
+    stream_url: str,
+    interval_s: int,
+    max_frames: int,
+    timeout: int = 120,
+) -> tuple[list[FrameSample], Optional[str]]:
+    """
+    Fallback extractor for hosted environments where OpenCV cannot open
+    signed YouTube HLS/DASH manifests directly.
+    """
+    ffmpeg_bin = shutil.which("ffmpeg")
+    if not ffmpeg_bin:
+        return [], "ffmpeg is not installed; add it as a system dependency for deployment."
+
+    clip_duration_s = max(interval_s * max_frames + interval_s, 12)
+
+    try:
+        with tempfile.TemporaryDirectory(prefix="vlm_ffmpeg_") as tmp_dir:
+            output_pattern = str(Path(tmp_dir) / "frame_%03d.png")
+            cmd = [
+                ffmpeg_bin,
+                "-y",
+                "-nostdin",
+                "-loglevel",
+                "error",
+                "-rw_timeout",
+                "15000000",
+                "-i",
+                stream_url,
+                "-t",
+                str(clip_duration_s),
+                "-an",
+                "-vf",
+                f"fps=1/{max(1, interval_s)}",
+                "-frames:v",
+                str(max_frames),
+                output_pattern,
+            ]
+
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+            if result.returncode != 0:
+                err = result.stderr.strip() or "ffmpeg failed to extract frames"
+                return [], err
+
+            frames: list[FrameSample] = []
+            for idx, frame_path in enumerate(sorted(Path(tmp_dir).glob("frame_*.png"))):
+                frame_bgr = cv2.imread(str(frame_path))
+                if frame_bgr is None:
+                    continue
+                frames.append(
+                    FrameSample(
+                        frame_index=len(frames),
+                        timestamp_s=round(idx * interval_s, 2),
+                        frame_bgr=frame_bgr,
+                    )
+                )
+
+            if not frames:
+                return [], "ffmpeg completed, but no frames were extracted."
+
+            return frames, None
+    except subprocess.TimeoutExpired:
+        return [], f"ffmpeg timed out after {timeout}s"
+    except Exception as e:
+        return [], str(e)
+
+
 def sample_frames_from_url(
     yt_url: str,
     interval_s: int = 10,
@@ -287,7 +357,26 @@ def sample_frames_from_url(
         )
         frames = sampler.sample(progress_callback=progress_callback)
         if not frames:
-            return [], "No frames could be extracted from the stream."
+            ffmpeg_frames, ffmpeg_err = _sample_frames_with_ffmpeg(
+                stream_url=stream_url,
+                interval_s=interval_s,
+                max_frames=max_frames,
+            )
+            if ffmpeg_frames:
+                logger.info("OpenCV returned no frames; recovered with ffmpeg fallback.")
+                return ffmpeg_frames, None
+            return [], ffmpeg_err or "No frames could be extracted from the stream."
         return frames, None
     except Exception as e:
+        logger.warning("OpenCV stream sampling failed, trying ffmpeg fallback: %s", e)
+        ffmpeg_frames, ffmpeg_err = _sample_frames_with_ffmpeg(
+            stream_url=stream_url,
+            interval_s=interval_s,
+            max_frames=max_frames,
+        )
+        if ffmpeg_frames:
+            return ffmpeg_frames, None
+
+        if ffmpeg_err:
+            return [], f"{e} | ffmpeg fallback failed: {ffmpeg_err}"
         return [], str(e)
