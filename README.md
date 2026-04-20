@@ -1,10 +1,10 @@
-# traffic-safety-vlm
+# VLM Traffic Safety Analyzer
 
 Research-grade Streamlit application for multimodal traffic safety analysis from live streams and recorded video. The app samples frames from YouTube feeds, runs structured vision-language analysis through Gemini, OpenRouter, or Ollama, enriches results with lightweight computer vision metrics, and produces dashboard-ready outputs for transportation safety review.
 
 ## Overview
 
-`traffic-safety-vlm` is designed for exploratory roadway safety analysis where full trajectory extraction pipelines may be too heavy or unavailable. Instead of treating a vision-language model as a free-form assistant, the app constrains the model to emit a structured safety record aligned to a transportation-analysis schema. That record is then combined with conventional computer vision features and rendered into interactive charts, flat exports, and a narrative report.
+`VLM Traffic Safety Analyzer` is designed for exploratory roadway safety analysis where full trajectory extraction pipelines may be too heavy or unavailable. Instead of treating a vision-language model as a free-form assistant, the app constrains the model to emit a structured safety record aligned to a transportation-analysis schema. That record is then combined with conventional computer vision features and rendered into interactive charts, flat exports, and a narrative report.
 
 The current implementation focuses on video-based observation workflows such as:
 
@@ -224,11 +224,3 @@ Common extension points include:
 - expanding charting and export logic in `modules/report_builder.py`
 - replacing heuristic speed or conflict estimates with stronger CV models
 - integrating lane geometry, map context, or metadata-driven calibration
-
-## Recommended repository description
-
-Research-grade Streamlit app for multimodal traffic safety analysis from live streams and recorded video using Gemini, OpenRouter, or Ollama.
-
-## License
-
-No license file is currently included in this repository. Add one before using the project for redistribution, commercial use, or public collaboration beyond source sharing.
