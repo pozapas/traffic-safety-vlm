@@ -1,0 +1,402 @@
+/* ═══════════════════════════════════════════════════════════
+   VLM Traffic Safety Analyzer — Custom Streamlit CSS Theme
+   Dark Scientific Dashboard Aesthetic
+   ═══════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;600;700&display=swap');
+
+/* ─── Root Variables ─── */
+:root {
+    --bg-primary:     #090e1a;
+    --bg-secondary:   #0d1626;
+    --bg-card:        #111d32;
+    --bg-card-hover:  #162240;
+    --accent-cyan:    #00d4ff;
+    --accent-teal:    #00b4a0;
+    --accent-amber:   #f59e0b;
+    --accent-rose:    #fb7185;
+    --accent-violet:  #818cf8;
+    --text-primary:   #e2eaf6;
+    --text-secondary: #8fa3bf;
+    --text-muted:     #4a6080;
+    --border-subtle:  rgba(0, 212, 255, 0.12);
+    --border-glow:    rgba(0, 212, 255, 0.35);
+    --shadow-card:    0 8px 32px rgba(0, 0, 0, 0.45);
+    --shadow-glow:    0 0 24px rgba(0, 212, 255, 0.15);
+    --radius-card:    14px;
+    --font-display:   'Outfit', sans-serif;
+    --font-body:      'Space Grotesk', sans-serif;
+    --font-mono:      'JetBrains Mono', monospace;
+}
+
+/* ─── App Container ─── */
+.stApp {
+    background: var(--bg-primary) !important;
+    font-family: var(--font-body) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Subtle animated grid background */
+.stApp::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ─── Main Content ─── */
+.main .block-container {
+    padding: 1.5rem 2rem 3rem 2rem !important;
+    max-width: 1400px !important;
+}
+
+/* ─── Sidebar ─── */
+[data-testid="stSidebar"] {
+    background: var(--bg-secondary) !important;
+    border-right: 1px solid var(--border-subtle) !important;
+}
+
+[data-testid="stSidebar"] .block-container {
+    padding: 1.5rem 1.2rem !important;
+}
+
+/* ─── Typography ─── */
+h1 {
+    font-family: var(--font-display) !important;
+    font-size: 2.2rem !important;
+    font-weight: 700 !important;
+    background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-teal) 50%, var(--accent-violet) 100%);
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    letter-spacing: -0.02em !important;
+    margin-bottom: 0.25rem !important;
+}
+
+h2 {
+    font-family: var(--font-display) !important;
+    font-size: 1.35rem !important;
+    font-weight: 600 !important;
+    color: var(--text-primary) !important;
+    letter-spacing: -0.01em !important;
+}
+
+h3 {
+    font-family: var(--font-body) !important;
+    font-size: 1.05rem !important;
+    font-weight: 600 !important;
+    color: var(--accent-cyan) !important;
+    letter-spacing: 0.04em !important;
+    text-transform: uppercase !important;
+}
+
+p, li, label {
+    font-family: var(--font-body) !important;
+    color: var(--text-secondary) !important;
+    font-size: 0.92rem !important;
+}
+
+code, pre {
+    font-family: var(--font-mono) !important;
+    background: rgba(0, 212, 255, 0.06) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 6px !important;
+    color: var(--accent-cyan) !important;
+    font-size: 0.82rem !important;
+}
+
+/* ─── Metric Cards ─── */
+[data-testid="stMetric"] {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: var(--radius-card) !important;
+    padding: 1.1rem 1.4rem !important;
+    box-shadow: var(--shadow-card) !important;
+    transition: all 0.25s ease !important;
+    position: relative;
+    overflow: hidden;
+}
+
+[data-testid="stMetric"]::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-teal));
+}
+
+[data-testid="stMetric"]:hover {
+    border-color: var(--border-glow) !important;
+    box-shadow: var(--shadow-glow) !important;
+    transform: translateY(-2px) !important;
+}
+
+[data-testid="stMetricLabel"] {
+    font-family: var(--font-body) !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    color: var(--text-muted) !important;
+}
+
+[data-testid="stMetricValue"] {
+    font-family: var(--font-display) !important;
+    font-size: 1.85rem !important;
+    font-weight: 700 !important;
+    color: var(--accent-cyan) !important;
+}
+
+[data-testid="stMetricDelta"] {
+    font-size: 0.8rem !important;
+    font-family: var(--font-mono) !important;
+}
+
+/* ─── Buttons ─── */
+.stButton > button {
+    font-family: var(--font-body) !important;
+    font-weight: 600 !important;
+    font-size: 0.88rem !important;
+    letter-spacing: 0.04em !important;
+    background: linear-gradient(135deg, #0099bb, #007a6e) !important;
+    color: #e2eaf6 !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 0.55rem 1.4rem !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 4px 12px rgba(0, 153, 187, 0.3) !important;
+}
+
+.stButton > button:hover {
+    background: linear-gradient(135deg, #00b4d8, #009688) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 8px 20px rgba(0, 153, 187, 0.45) !important;
+}
+
+.stButton > button:active {
+    transform: translateY(0) !important;
+    background: linear-gradient(135deg, #007a96, #005f57) !important;
+}
+
+/* Secondary button style */
+button[kind="secondary"] {
+    background: transparent !important;
+    border: 1px solid var(--border-glow) !important;
+    color: var(--accent-cyan) !important;
+    box-shadow: none !important;
+}
+
+/* ─── Inputs & Selects ─── */
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea,
+.stSelectbox > div > div > div,
+.stMultiSelect > div > div > div {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 8px !important;
+    color: var(--text-primary) !important;
+    font-family: var(--font-body) !important;
+    font-size: 0.9rem !important;
+    transition: border-color 0.2s ease !important;
+}
+
+.stTextInput > div > div > input:focus,
+.stTextArea > div > div > textarea:focus {
+    border-color: var(--accent-cyan) !important;
+    box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.15) !important;
+}
+
+/* ─── Sliders ─── */
+.stSlider > div > div > div > div {
+    background: var(--accent-cyan) !important;
+}
+
+/* ─── Tabs ─── */
+.stTabs [data-baseweb="tab-list"] {
+    background: var(--bg-secondary) !important;
+    border-radius: 10px !important;
+    padding: 4px !important;
+    border: 1px solid var(--border-subtle) !important;
+    gap: 4px !important;
+}
+
+.stTabs [data-baseweb="tab"] {
+    font-family: var(--font-body) !important;
+    font-weight: 600 !important;
+    font-size: 0.88rem !important;
+    letter-spacing: 0.03em !important;
+    color: var(--text-muted) !important;
+    border-radius: 8px !important;
+    padding: 0.5rem 1.2rem !important;
+    background: transparent !important;
+    border: none !important;
+    transition: all 0.2s ease !important;
+}
+
+.stTabs [aria-selected="true"] {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(0, 180, 160, 0.15)) !important;
+    color: var(--accent-cyan) !important;
+    border: 1px solid var(--border-glow) !important;
+}
+
+/* ─── Expanders ─── */
+.streamlit-expanderHeader {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 10px !important;
+    font-family: var(--font-body) !important;
+    font-weight: 600 !important;
+    color: var(--text-primary) !important;
+}
+
+/* ─── Dataframes / Tables ─── */
+.dataframe {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 10px !important;
+    font-family: var(--font-mono) !important;
+    font-size: 0.8rem !important;
+}
+
+/* ─── Progress Bar ─── */
+.stProgress > div > div > div > div {
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-teal)) !important;
+}
+
+/* ─── Alerts / Info Boxes ─── */
+.stAlert {
+    border-radius: 10px !important;
+    border-left-width: 3px !important;
+    font-family: var(--font-body) !important;
+    font-size: 0.88rem !important;
+}
+
+/* ─── Dividers ─── */
+hr {
+    border-color: var(--border-subtle) !important;
+    margin: 1.5rem 0 !important;
+}
+
+/* ─── Custom Badge Component ─── */
+.badge-critical { 
+    background: rgba(251,113,133,0.15); color: #fb7185; 
+    border: 1px solid rgba(251,113,133,0.3);
+    padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+}
+.badge-high { 
+    background: rgba(245,158,11,0.15); color: #f59e0b; 
+    border: 1px solid rgba(245,158,11,0.3);
+    padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+}
+.badge-medium { 
+    background: rgba(129,140,248,0.15); color: #818cf8; 
+    border: 1px solid rgba(129,140,248,0.3);
+    padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+}
+.badge-low { 
+    background: rgba(0,212,255,0.12); color: #00d4ff; 
+    border: 1px solid rgba(0,212,255,0.25);
+    padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+}
+
+/* ─── Safety Score Ring ─── */
+.score-ring-container {
+    display: flex; flex-direction: column; align-items: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-card);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-card);
+}
+
+/* ─── Stream Output Box ─── */
+.stream-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--accent-cyan);
+    max-height: 360px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    line-height: 1.6;
+}
+
+/* ─── Sidebar Section Headers ─── */
+.sidebar-section {
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 1.2rem 0 0.5rem 0;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+/* ─── Plotly Charts Container ─── */
+.js-plotly-plot {
+    border-radius: var(--radius-card) !important;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb { background: var(--border-glow); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-cyan); }
+
+/* ─── Animations ─── */
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 8px rgba(0,212,255,0.2); }
+    50%       { box-shadow: 0 0 20px rgba(0,212,255,0.5); }
+}
+
+@keyframes slide-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.stMetric, [data-testid="stVerticalBlock"] > div {
+    animation: slide-in 0.35s ease both;
+}
+
+/* ─── Checkbox ─── */
+.stCheckbox label {
+    color: var(--text-secondary) !important;
+    font-family: var(--font-body) !important;
+    font-size: 0.88rem !important;
+}
+
+/* ─── Download Button ─── */
+.stDownloadButton > button {
+    background: transparent !important;
+    border: 1px solid var(--accent-teal) !important;
+    color: var(--accent-teal) !important;
+    font-family: var(--font-body) !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+}
+
+.stDownloadButton > button:hover {
+    background: rgba(0,180,160,0.1) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* ─── Number Input ─── */
+.stNumberInput input {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-subtle) !important;
+    color: var(--text-primary) !important;
+    font-family: var(--font-mono) !important;
+    border-radius: 8px !important;
+}
