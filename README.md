@@ -193,20 +193,6 @@ The UI also supports entering provider settings directly in the sidebar.
 5. Set frame interval and max frame count.
 6. Run the analysis and review the dashboard and report tabs.
 
-## Design choices
-
-### Why structured VLM output
-
-The project avoids free-form narrative-only outputs. Prompts require the model to return JSON conforming to the app schema, which makes downstream aggregation and export significantly more reliable.
-
-### Why combine CV with VLM inference
-
-The VLM contributes semantic reasoning, scene interpretation, and standards-referenced recommendations. The CV layer provides low-cost motion and scene-complexity signals that are deterministic, cheap to compute, and useful for comparison across feeds.
-
-### Why Streamlit
-
-The target workflow is rapid iteration by researchers, practitioners, and students rather than production-grade multi-user serving. Streamlit keeps the interface lightweight while making it easy to inspect intermediate artifacts.
-
 ## Limitations
 
 - The app does not perform calibrated multi-object tracking or trajectory reconstruction.
